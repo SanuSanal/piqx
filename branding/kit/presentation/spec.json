@@ -1,0 +1,35 @@
+{
+  "brand": "PiqX",
+  "tagline": "Live scores & streams",
+  "brief": "A platform to follow live cricket and football: check the score, then tap in and watch the stream. It should feel live, fast and confident, and sit naturally in the app's dark, electric-green interface.",
+  "adjectives": ["live", "fast", "bold", "clear"],
+  "criteria": "Success: says both scores and streams without a cliché play button, reads at 16 px, works in one colour, and matches the app's Space Grotesk + green/cyan design language.",
+  "mockups": ["app-icon", "social", "website", "favicon-tab", "tshirt", "signage"],
+  "nav": ["Live", "Fixtures", "Results"],
+  "brand_color": "#111318",
+  "tile_color": "#111318",
+  "greyscale": false,
+  "final": true,
+  "designer": "PiqX",
+  "concepts": [
+    {
+      "name": "Match point",
+      "symbol": "../svg/piqx-symbol-on-light.svg",
+      "lockup": "../svg/piqx-wordmark-on-light.svg",
+      "stacked": "../svg/piqx-stacked-on-light.svg",
+      "symbol_on_tile": "../svg/piqx-symbol-on-dark.svg",
+      "symbol_on_dark": "../svg/piqx-symbol-on-dark.svg",
+      "lockup_on_dark": "../svg/piqx-wordmark-on-dark.svg",
+      "stack_dark": "../svg/piqx-stacked-on-dark.svg",
+      "avatar": "../svg/piqx-app-icon.svg",
+      "idea": "The X is the 'vs' of every fixture and the × of every scoreline; the ball at its heart is the live game.",
+      "rationale": [
+        "Covers both halves of the product: scores (vs / ×) and streams (the live ball)",
+        "The symbol is the last letter of the wordmark, so icon and name are one system",
+        "Built at exact 60° with one cut and one ball; four clean arms survive at 16 px",
+        "Space Grotesk outlines, electric green #00F59B and cyan #00D2FF from the app itself"
+      ]
+    }
+  ],
+  "recommendation": "Match point is final: use the wordmark as the primary logo, the symbol for the app icon and avatars."
+}
