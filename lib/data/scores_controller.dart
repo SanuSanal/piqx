@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'matches.dart';
 import 'scores_repository.dart';
 
-/// Holds today's matches and keeps them fresh: every minute while something is live,
+/// Holds today's matches and keeps them fresh: every 30 seconds while something is live,
 /// every five minutes otherwise, and straight away when the app comes back to the foreground.
 class ScoresController extends ChangeNotifier with WidgetsBindingObserver {
   ScoresController(this._repository, {this.autoRefresh = true}) {
@@ -15,7 +15,7 @@ class ScoresController extends ChangeNotifier with WidgetsBindingObserver {
   final ScoresRepository _repository;
   final bool autoRefresh;
 
-  static const liveInterval = Duration(minutes: 1);
+  static const liveInterval = Duration(seconds: 30);
   static const idleInterval = Duration(minutes: 5);
 
   List<Match> _matches = const [];

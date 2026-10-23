@@ -5,7 +5,7 @@ Live football and cricket scores and streams for Android.
 - **Football:** Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League and Copa del Rey.
 - **Cricket:** internationals (Test, ODI, T20I) involving the top ten men's sides, plus the IPL, BBL, PSL, The Hundred, SA20, CPL, ILT20 and MLC.
 
-Scores come from ESPN's public scoreboard feeds (`lib/data/scores_repository.dart`). No API key is needed. The app refreshes every minute while a match is live and every five minutes otherwise.
+Scores come from ESPN's public scoreboard feeds (`lib/data/scores_repository.dart`). No API key is needed. The app refreshes every 30 seconds while a match is live and every five minutes otherwise.
 
 ## Development
 
