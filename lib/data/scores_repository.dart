@@ -316,7 +316,12 @@ Team _team(Map? t) {
   final name = t?['displayName'] as String? ?? t?['name'] as String? ?? 'TBD';
   var code = (t?['abbreviation'] as String? ?? '').trim();
   if (code.isEmpty) code = name.replaceAll(' ', '');
-  return Team(name, code.length > 4 ? code.substring(0, 4).toUpperCase() : code.toUpperCase());
+  final logo = (t?['logo'] as String? ?? '').trim();
+  return Team(
+    name,
+    code.length > 4 ? code.substring(0, 4).toUpperCase() : code.toUpperCase(),
+    logo.isEmpty ? null : logo,
+  );
 }
 
 /// Countdown label for an upcoming match, e.g. "STARTS IN 1h 15m".

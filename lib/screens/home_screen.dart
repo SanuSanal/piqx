@@ -48,6 +48,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _select(Sport sport) => setState(() => _sport = sport);
 
+  static const _exitWindow = Duration(seconds: 2);
+  DateTime? _lastBack;
+
+  /// Back (button or edge swipe) on home: the first press warns, a second within
+  /// [_exitWindow] closes the app.
+  void _onBack(bool didPop, Object? _) {
+    if (didPop) return;
+    final now = DateTime.now();
+    if (_lastBack != null && now.difference(_lastBack!) < _exitWindow) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      SystemNavigator.pop();
+      return;
+    }
+    _lastBack = now;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('Press back again to exit'), duration: _exitWindow));
+  }
+
   void _watch(Match match) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => StreamScreen(sport: match.sport, match: match)),
@@ -71,60 +90,64 @@ class _HomeScreenState extends State<HomeScreen> {
         statusBarColor: Colors.transparent,
         systemNavigationBarColor: c.surface,
       ),
-      child: Scaffold(
-        backgroundColor: c.surface,
-        body: Stack(
-          children: [
-            ListenableBuilder(
-              listenable: widget.scores,
-              builder: (context, _) {
-                final scores = widget.scores;
-                final matches = scores.forSport(_sport);
-                return RefreshIndicator(
-                  onRefresh: scores.refresh,
-                  color: c.onPrimaryFixed,
-                  backgroundColor: c.primaryContainer,
-                  edgeOffset: topInset + 64,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(16, topInset + 64 + 12, 16, 16 + MediaQuery.paddingOf(context).bottom),
-                    children: [
-                      _ExploreSports(selected: _sport, onOpen: _openSport, scores: scores),
-                      const SizedBox(height: 24),
-                      _MatchesHeader(selected: _sport, onSelect: _select),
-                      const SizedBox(height: 14),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
-                        child: Column(
-                          key: ValueKey((_sport, scores.hasLoaded, matches.isEmpty)),
-                          children: [
-                            if (matches.isEmpty)
-                              _MatchesPlaceholder(sport: _sport, scores: scores)
-                            else
-                              for (final (i, m) in matches.indexed) ...[
-                                if (i > 0) const SizedBox(height: 12),
-                                MatchCard(match: m, onWatch: () => _watch(m)),
-                              ],
-                          ],
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: _onBack,
+        child: Scaffold(
+          backgroundColor: c.surface,
+          body: Stack(
+            children: [
+              ListenableBuilder(
+                listenable: widget.scores,
+                builder: (context, _) {
+                  final scores = widget.scores;
+                  final matches = scores.forSport(_sport);
+                  return RefreshIndicator(
+                    onRefresh: scores.refresh,
+                    color: c.onPrimaryFixed,
+                    backgroundColor: c.primaryContainer,
+                    edgeOffset: topInset + 64,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(16, topInset + 64 + 12, 16, 16 + MediaQuery.paddingOf(context).bottom),
+                      children: [
+                        _ExploreSports(selected: _sport, onOpen: _openSport, scores: scores),
+                        const SizedBox(height: 24),
+                        _MatchesHeader(selected: _sport, onSelect: _select),
+                        const SizedBox(height: 14),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: Column(
+                            key: ValueKey((_sport, scores.hasLoaded, matches.isEmpty)),
+                            children: [
+                              if (matches.isEmpty)
+                                _MatchesPlaceholder(sport: _sport, scores: scores)
+                              else
+                                for (final (i, m) in matches.indexed) ...[
+                                  if (i > 0) const SizedBox(height: 12),
+                                  MatchCard(match: m, onWatch: () => _watch(m)),
+                                ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      _Footer(scores: scores, updates: widget.updates),
-                    ],
-                  ),
-                );
-              },
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _Header(
-                onToggleTheme: widget.onToggleTheme,
-                onOpenUpdates: () => showUpdateSettings(context, widget.updates),
+                        const SizedBox(height: 24),
+                        _Footer(scores: scores, updates: widget.updates),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ),
-          ],
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _Header(
+                  onToggleTheme: widget.onToggleTheme,
+                  onOpenUpdates: () => showUpdateSettings(context, widget.updates),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

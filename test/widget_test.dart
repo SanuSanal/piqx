@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -100,6 +101,44 @@ void main() {
 
     expect(find.text("Couldn't load scores"), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('back on home warns first, then exits on a second press', (tester) async {
+    final platformCalls = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      platformCalls.add(call.method);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+
+    await tester.pumpWidget(app());
+    await pastSplash(tester);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.text('Press back again to exit'), findsOneWidget);
+    expect(platformCalls, isNot(contains('SystemNavigator.pop')));
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(platformCalls, contains('SystemNavigator.pop'));
+  });
+
+  testWidgets('back on the stream screen returns home', (tester) async {
+    await tester.pumpWidget(app());
+    await pastSplash(tester);
+
+    await tester.tap(find.text('Watch Live').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Football Streams'), findsNWidgets(2));
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Football Streams'), findsNothing);
+    expect(find.text('Explore Sports'), findsOneWidget);
+    expect(find.text('Press back again to exit'), findsNothing);
   });
 
   testWidgets('updates button opens the update settings', (tester) async {

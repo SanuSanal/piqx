@@ -176,11 +176,14 @@ class _UpcomingBadge extends StatelessWidget {
   }
 }
 
-class _TeamCode extends StatelessWidget {
-  const _TeamCode({required this.code, required this.size, this.color, this.bordered = false});
+/// Team crest in a rounded tile, or the team code while it loads or when there's no crest.
+class _TeamBadge extends StatelessWidget {
+  const _TeamBadge({required this.team, required this.size, this.color, this.bordered = false});
 
-  final String code;
+  final Team team;
   final double size;
+
+  /// Colour of the code fallback.
   final Color? color;
   final bool bordered;
 
@@ -188,21 +191,64 @@ class _TeamCode extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final style = size >= 44 ? AppText.headlineSm : AppText.labelLg;
+    final code = Text(
+      team.code,
+      style: style.copyWith(color: color ?? c.onSurface, fontWeight: FontWeight.w700, letterSpacing: 0),
+    );
+    final logo = team.logoUrl;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final px = (size * MediaQuery.devicePixelRatioOf(context)).round();
     return Container(
       width: size,
       height: size,
       alignment: Alignment.center,
+      padding: logo == null ? null : EdgeInsets.all(size * 0.14),
       decoration: BoxDecoration(
         color: c.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(size >= 44 ? 12 : 8),
         border: bordered ? Border.all(color: c.outlineVariant.withValues(alpha: 0.3)) : null,
       ),
-      child: Text(
-        code,
-        style: style.copyWith(color: color ?? c.onSurface, fontWeight: FontWeight.w700, letterSpacing: 0),
-      ),
+      child: logo == null
+          ? code
+          : _LogoImage(urls: teamLogoUrls(logo, dark: dark, px: px), fallback: code, semanticLabel: team.name),
     );
   }
+}
+
+/// Tries [urls] in order and shows [fallback] while loading or once every URL has failed.
+class _LogoImage extends StatelessWidget {
+  const _LogoImage({required this.urls, required this.fallback, required this.semanticLabel});
+
+  final List<String> urls;
+  final Widget fallback;
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (urls.isEmpty) return fallback;
+    return Image.network(
+      urls.first,
+      fit: BoxFit.contain,
+      semanticLabel: semanticLabel,
+      frameBuilder: (context, child, frame, sync) => frame == null && !sync ? fallback : child,
+      errorBuilder: (context, error, stack) =>
+          _LogoImage(urls: urls.sublist(1), fallback: fallback, semanticLabel: semanticLabel),
+    );
+  }
+}
+
+/// Logo URLs to try for an ESPN crest, best first: the dark-background variant in dark mode
+/// (football only — ESPN has no dark cricket logos), then the standard one. ESPN images are
+/// fetched resized to [px] so cards don't download 500px originals.
+List<String> teamLogoUrls(String logo, {required bool dark, required int px}) {
+  final uri = Uri.tryParse(logo);
+  if (uri == null || uri.host != 'a.espncdn.com' || !uri.path.startsWith('/i/')) return [logo];
+  String sized(String path) => 'https://a.espncdn.com/combiner/i?img=$path&w=$px&h=$px';
+  final path = uri.path;
+  return [
+    if (dark && path.contains('/teamlogos/soccer/500/')) sized(path.replaceFirst('/500/', '/500-dark/')),
+    sized(path),
+  ];
 }
 
 class _FeaturedFootballCard extends StatelessWidget {
@@ -225,8 +271,8 @@ class _FeaturedFootballCard extends StatelessWidget {
                 style: AppText.bodySm.copyWith(color: c.onSurfaceVariant)),
         ],
       );
-      final code = _TeamCode(
-        code: t.code,
+      final code = _TeamBadge(
+        team: t,
         size: 44,
         bordered: true,
         color: end ? c.secondaryText : null,
@@ -296,7 +342,7 @@ class _FeaturedCricketCard extends StatelessWidget {
     Widget side(Team team, String? detail, {required bool batting, required bool dimmed}) {
       final row = Row(
         children: [
-          _TeamCode(code: team.code, size: 32),
+          _TeamBadge(team: team, size: 32),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(
@@ -431,7 +477,7 @@ class _CompactMatchCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: end ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            if (!end) ...[_TeamCode(code: t.code, size: 36), const SizedBox(width: 10)],
+            if (!end) ...[_TeamBadge(team: t, size: 36), const SizedBox(width: 10)],
             Flexible(
               child: Column(
                 crossAxisAlignment: end ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -450,7 +496,7 @@ class _CompactMatchCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (end) ...[const SizedBox(width: 10), _TeamCode(code: t.code, size: 36)],
+            if (end) ...[const SizedBox(width: 10), _TeamBadge(team: t, size: 36)],
           ],
         ),
       );

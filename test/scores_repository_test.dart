@@ -29,7 +29,16 @@ Map<String, dynamic> soccerEvent({
         {
           'venue': {'fullName': 'Emirates Stadium'},
           'competitors': [
-            {'homeAway': 'home', 'score': homeScore, 'team': {'id': '1', 'displayName': home, 'abbreviation': 'ARS'}},
+            {
+              'homeAway': 'home',
+              'score': homeScore,
+              'team': {
+                'id': '1',
+                'displayName': home,
+                'abbreviation': 'ARS',
+                'logo': 'https://a.espncdn.com/i/teamlogos/soccer/500/359.png',
+              },
+            },
             {'homeAway': 'away', 'score': awayScore, 'team': {'id': '2', 'displayName': away, 'abbreviation': 'EVE'}},
           ],
           'details': details,
@@ -128,6 +137,8 @@ void main() {
       expect(m.awayDetail, "Beto 41' (P)");
       expect(m.league, 'Premier League');
       expect(m.leagueTone, LeagueTone.neutral);
+      expect(m.home.logoUrl, 'https://a.espncdn.com/i/teamlogos/soccer/500/359.png');
+      expect(m.away.logoUrl, isNull);
     });
 
     test('upcoming match has a countdown and no score', () {

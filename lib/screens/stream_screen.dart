@@ -53,6 +53,17 @@ class _StreamScreenState extends State<StreamScreen> {
     await SharePlus.instance.share(ShareParams(text: text, subject: 'Watch $what live on PiqX'));
   }
 
+  /// System back walks back through the stream page's history first, then leaves the screen.
+  Future<void> _onBack(bool didPop, Object? _) async {
+    if (didPop) return;
+    final controller = _controller;
+    if (controller != null && await controller.canGoBack()) {
+      await controller.goBack();
+    } else if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -66,37 +77,41 @@ class _StreamScreenState extends State<StreamScreen> {
         statusBarColor: Colors.transparent,
         systemNavigationBarColor: c.surface,
       ),
-      child: Scaffold(
-        backgroundColor: c.surface,
-        body: Stack(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, topInset + 64 + 16, 16, 16 + bottomInset),
-              child: _controller == null
-                  ? _WebViewPlaceholder(sport: widget.sport, title: title)
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Stack(
-                        children: [
-                          WebViewWidget(controller: _controller!),
-                          if (_progress < 100)
-                            LinearProgressIndicator(
-                              value: _progress / 100,
-                              minHeight: 3,
-                              color: c.secondaryContainer,
-                              backgroundColor: Colors.transparent,
-                            ),
-                        ],
+      child: PopScope(
+        canPop: _controller == null,
+        onPopInvokedWithResult: _onBack,
+        child: Scaffold(
+          backgroundColor: c.surface,
+          body: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, topInset + 64 + 16, 16, 16 + bottomInset),
+                child: _controller == null
+                    ? _WebViewPlaceholder(sport: widget.sport, title: title)
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Stack(
+                          children: [
+                            WebViewWidget(controller: _controller!),
+                            if (_progress < 100)
+                              LinearProgressIndicator(
+                                value: _progress / 100,
+                                minHeight: 3,
+                                color: c.secondaryContainer,
+                                backgroundColor: Colors.transparent,
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _StreamHeader(title: title, onBack: () => Navigator.of(context).maybePop(), onShare: _share),
-            ),
-          ],
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _StreamHeader(title: title, onBack: () => Navigator.of(context).pop(), onShare: _share),
+              ),
+            ],
+          ),
         ),
       ),
     );

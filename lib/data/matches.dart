@@ -14,10 +14,13 @@ enum MatchStatus { live, upcoming, finished }
 enum LeagueTone { neutral, secondary, muted }
 
 class Team {
-  const Team(this.name, this.code);
+  const Team(this.name, this.code, [this.logoUrl]);
 
   final String name;
   final String code;
+
+  /// Crest or flag from the scores feed; the card shows [code] when it's missing or fails to load.
+  final String? logoUrl;
 }
 
 class Match {
