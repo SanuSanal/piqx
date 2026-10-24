@@ -10,6 +10,7 @@ import '../data/stream_links.dart';
 import '../theme/app_theme.dart';
 import '../update/update_prompt.dart';
 import '../update/update_service.dart';
+import '../widgets/live_badge.dart';
 import '../widgets/match_cards.dart';
 import 'match_details_screen.dart';
 import 'stream_screen.dart';
@@ -185,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        _Footer(scores: scores, updates: widget.updates),
+                        const _Footer(),
                       ],
                     ),
                   );
@@ -579,61 +580,46 @@ class _MatchesPlaceholder extends StatelessWidget {
   }
 }
 
+/// Credit for the scores feed: a small pill with a live dot and the ESPN wordmark.
 class _Footer extends StatelessWidget {
-  const _Footer({required this.scores, required this.updates});
-
-  final ScoresController scores;
-  final UpdateService updates;
+  const _Footer();
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final muted = c.onSurfaceVariant.withValues(alpha: 0.6);
-    final updated = scores.updatedAt;
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 24),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 8, 16, 8),
+          decoration: BoxDecoration(
+            color: c.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: c.outlineVariant.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.sports_soccer, size: 16, color: c.primaryContainer),
-              const SizedBox(width: 6),
-              Text('LIVE SCORES VIA ', style: AppText.labelSm.copyWith(color: c.onSurfaceVariant.withValues(alpha: 0.8))),
+              PulsingDot(color: c.primaryContainer, size: 7),
+              const SizedBox(width: 10),
+              Text('LIVE SCORES BY',
+                  style: AppText.labelSm.copyWith(color: c.onSurfaceVariant, letterSpacing: 1.2)),
+              const SizedBox(width: 8),
               Text('ESPN',
                   style: AppText.headlineSm.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                    color: c.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    fontStyle: FontStyle.italic,
+                    letterSpacing: -0.4,
+                    height: 1,
+                    color: _espnRed,
                   )),
             ],
           ),
-          if (updated != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              scores.error == null ? 'Updated ${_hhmm(updated)}' : 'Offline • showing scores from ${_hhmm(updated)}',
-              style: TextStyle(fontFamily: AppText.mono, fontSize: 11, color: muted),
-            ),
-          ],
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: () => checkForUpdates(context, updates, manual: true),
-            child: FutureBuilder<String>(
-              future: updates.currentVersion().catchError((_) => ''),
-              builder: (context, snapshot) {
-                final v = snapshot.data ?? '';
-                return Text(
-                  '${v.isEmpty ? 'PiqX' : 'PiqX v$v'}  •  Check for updates',
-                  style: TextStyle(fontFamily: AppText.mono, fontSize: 11, color: muted),
-                );
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  static String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  static const _espnRed = Color(0xFFE4002B);
 }

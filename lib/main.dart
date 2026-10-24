@@ -7,8 +7,11 @@ import 'screens/home_screen.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'update/update_service.dart';
+import 'widgets/web_video.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  lockPortrait();
   runApp(const PiqxApp());
 }
 

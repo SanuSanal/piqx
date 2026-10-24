@@ -8,6 +8,51 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../data/matches.dart';
 import '../theme/app_theme.dart';
 import '../widgets/live_badge.dart';
+import '../widgets/web_video.dart';
+
+/// Page script: on a channel page (an address with an `@handle`, e.g. `/@LaLiga/videos`), hides
+/// every element whose own text is the handle, ignoring case ("LALIGA", "ICC"). Nothing about the
+/// page is fixed in advance: the handle is read from the current address and the page is
+/// re-checked whenever it changes, so it keeps working as YouTube renders more content or moves
+/// between pages without a reload. Elements are shown again once the address has no handle.
+const _hideChannelNameJs = r"""
+(() => {
+  if (window.__piqxHideChannelName) return;
+  window.__piqxHideChannelName = true;
+  const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim().toLowerCase();
+  const handle = () => {
+    const m = location.pathname.match(/\/@([^\/?#]+)/);
+    return m ? decodeURIComponent(m[1]).toLowerCase() : null;
+  };
+  let queued = false;
+  const check = () => {
+    queued = false;
+    if (!document.body) return;
+    const name = handle();
+    for (const el of document.querySelectorAll('[data-piqx-hidden]')) {
+      if (name && ownText(el) === name) continue;
+      el.removeAttribute('data-piqx-hidden');
+      el.style.removeProperty('display');
+    }
+    if (!name) return;
+    const texts = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = texts.nextNode(); node; node = texts.nextNode()) {
+      const el = node.parentElement;
+      if (!el || el.hasAttribute('data-piqx-hidden') || node.textContent.trim().toLowerCase() !== name) continue;
+      if (ownText(el) !== name) continue;
+      el.setAttribute('data-piqx-hidden', '');
+      el.style.setProperty('display', 'none', 'important');
+    }
+  };
+  const queue = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(check);
+  };
+  new MutationObserver(queue).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  queue();
+})();
+""";
 
 /// "Matches - WebView Player Feed" from Stitch.
 class StreamScreen extends StatefulWidget {
@@ -38,9 +83,25 @@ class _StreamScreenState extends State<StreamScreen> {
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(PiqxColors.dark.surfaceContainerLowest)
         ..setNavigationDelegate(
-          NavigationDelegate(onProgress: (p) => setState(() => _progress = p)),
+          NavigationDelegate(
+            onPageStarted: (_) => _injectPageScripts(),
+            onProgress: (p) {
+              setState(() => _progress = p);
+              _injectPageScripts();
+            },
+            onPageFinished: (_) => _injectPageScripts(),
+          ),
         )
         ..loadRequest(Uri.parse(url));
+      enableLandscapeFullscreen(_controller!, () => context);
+    }
+  }
+
+  /// Injected as the page loads, so the channel name never shows; each script installs once
+  /// per page and then keeps itself up to date.
+  void _injectPageScripts() {
+    for (final js in const [_hideChannelNameJs, autoFullscreenOnPlayJs]) {
+      _controller?.runJavaScript(js).catchError((_) {});
     }
   }
 

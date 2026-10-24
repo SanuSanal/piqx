@@ -4,6 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../data/matches.dart';
 import '../theme/app_theme.dart';
+import '../widgets/web_video.dart';
 
 /// Hides ESPN's own site header and nav (espn.com football, espn.in cricket); the screen's
 /// header already credits ESPN. The cricket score strip sticks below that header, so it's
@@ -51,6 +52,7 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
         ),
       )
       ..loadRequest(Uri.parse(widget.url));
+    enableLandscapeFullscreen(_controller, () => context);
   }
 
   /// Injected as the page loads (it's a no-op once the style is in), so the header barely flashes.
