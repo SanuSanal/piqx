@@ -5,10 +5,13 @@ import 'package:flutter/services.dart';
 
 import '../data/matches.dart';
 import '../data/scores_controller.dart';
+import '../data/scores_repository.dart';
+import '../data/stream_links.dart';
 import '../theme/app_theme.dart';
 import '../update/update_prompt.dart';
 import '../update/update_service.dart';
 import '../widgets/match_cards.dart';
+import 'match_details_screen.dart';
 import 'stream_screen.dart';
 
 /// "Home - Sports & Today's Matches" from Stitch.
@@ -18,12 +21,14 @@ class HomeScreen extends StatefulWidget {
     required this.onToggleTheme,
     required this.scores,
     required this.updates,
+    required this.streams,
     this.checkUpdatesOnStart = true,
   });
 
   final VoidCallback onToggleTheme;
   final ScoresController scores;
   final UpdateService updates;
+  final StreamLinks streams;
   final bool checkUpdatesOnStart;
 
   @override
@@ -32,6 +37,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Sport _sport = Sport.football;
+
+  /// Competition the match list is filtered to, or null for all of them.
+  String? _league;
 
   @override
   void initState() {
@@ -46,7 +54,32 @@ class _HomeScreenState extends State<HomeScreen> {
     if (enabled && mounted) await checkForUpdates(context, widget.updates, manual: false);
   }
 
-  void _select(Sport sport) => setState(() => _sport = sport);
+  void _select(Sport sport) => setState(() {
+        _sport = sport;
+        _league = null;
+      });
+
+  /// Competitions in [matches] with their logos: football in [footballCompetitions] order,
+  /// cricket in the order the list shows them.
+  static List<(String, String?)> _leaguesOf(List<Match> matches) {
+    final logos = <String, String?>{};
+    for (final m in matches) {
+      logos.putIfAbsent(m.league, () => m.leagueLogoUrl);
+    }
+    final firstSeen = {for (final (i, name) in logos.keys.indexed) name: i};
+    int rank(String name) {
+      final i = footballCompetitions.indexWhere((c) => c.label == name);
+      return i < 0 ? footballCompetitions.length : i;
+    }
+
+    return (logos.keys.toList()
+          ..sort((a, b) {
+            final r = rank(a).compareTo(rank(b));
+            return r != 0 ? r : firstSeen[a]!.compareTo(firstSeen[b]!);
+          }))
+        .map((name) => (name, logos[name]))
+        .toList();
+  }
 
   static const _exitWindow = Duration(seconds: 2);
   DateTime? _lastBack;
@@ -67,15 +100,24 @@ class _HomeScreenState extends State<HomeScreen> {
       ..showSnackBar(const SnackBar(content: Text('Press back again to exit'), duration: _exitWindow));
   }
 
+  /// A match with an ESPN page opens it; otherwise its sport's stream.
+  void _open(Match match) {
+    final url = match.detailsUrl;
+    if (url == null) return _watch(match);
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MatchDetailsScreen(match: match, url: url)),
+    );
+  }
+
   void _watch(Match match) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => StreamScreen(sport: match.sport, match: match)),
+      MaterialPageRoute(builder: (_) => StreamScreen(sport: match.sport, match: match, url: widget.streams[match.sport])),
     );
   }
 
   void _openSport(Sport sport) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => StreamScreen(sport: sport)),
+      MaterialPageRoute(builder: (_) => StreamScreen(sport: sport, url: widget.streams[sport])),
     );
   }
 
@@ -101,7 +143,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 listenable: widget.scores,
                 builder: (context, _) {
                   final scores = widget.scores;
-                  final matches = scores.forSport(_sport);
+                  final all = scores.forSport(_sport);
+                  final leagues = _leaguesOf(all);
+                  // A competition that dropped off the slate on refresh stops filtering.
+                  final league = leagues.any((l) => l.$1 == _league) ? _league : null;
+                  final matches = league == null ? all : all.where((m) => m.league == league).toList();
                   return RefreshIndicator(
                     onRefresh: scores.refresh,
                     color: c.onPrimaryFixed,
@@ -115,17 +161,25 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 24),
                         _MatchesHeader(selected: _sport, onSelect: _select),
                         const SizedBox(height: 14),
+                        if (leagues.length > 1) ...[
+                          LeagueFilterBar(
+                            leagues: leagues,
+                            selected: league,
+                            onSelect: (l) => setState(() => _league = l),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 220),
                           child: Column(
-                            key: ValueKey((_sport, scores.hasLoaded, matches.isEmpty)),
+                            key: ValueKey((_sport, league, scores.hasLoaded, matches.isEmpty)),
                             children: [
                               if (matches.isEmpty)
                                 _MatchesPlaceholder(sport: _sport, scores: scores)
                               else
                                 for (final (i, m) in matches.indexed) ...[
                                   if (i > 0) const SizedBox(height: 12),
-                                  MatchCard(match: m, onWatch: () => _watch(m)),
+                                  MatchCard(match: m, onOpen: () => _open(m), onWatch: () => _watch(m)),
                                 ],
                             ],
                           ),

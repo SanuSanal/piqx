@@ -108,8 +108,9 @@ class EspnScoresRepository implements ScoresRepository {
     final football = <String, RankedMatch>{};
     for (final (priority, comp, request) in footballRequests) {
       final body = await request;
+      final logo = leagueLogo(body);
       for (final e in (body?['events'] as List? ?? const [])) {
-        final parsed = parseFootballEvent(e as Map<String, dynamic>, comp, now);
+        final parsed = parseFootballEvent(e as Map<String, dynamic>, comp, now, leagueLogo: logo);
         if (parsed != null && isToday(parsed.startTime!, _state(e))) {
           football[parsed.id] = RankedMatch(parsed, priority);
         }
@@ -173,8 +174,17 @@ List<Match> _arrange(Iterable<RankedMatch> ranked) {
   ];
 }
 
+/// The competition's standard logo from a soccer scoreboard response.
+String? leagueLogo(Map<String, dynamic>? scoreboard) {
+  final league = (scoreboard?['leagues'] as List?)?.firstOrNull as Map?;
+  for (final logo in (league?['logos'] as List? ?? const []).whereType<Map>()) {
+    if ((logo['rel'] as List? ?? const []).contains('default')) return logo['href'] as String?;
+  }
+  return null;
+}
+
 /// Maps one ESPN soccer scoreboard event; null when it can't be read.
-Match? parseFootballEvent(Map<String, dynamic> e, FootballCompetition comp, DateTime now) {
+Match? parseFootballEvent(Map<String, dynamic> e, FootballCompetition comp, DateTime now, {String? leagueLogo}) {
   final comps = e['competitions'] as List?;
   if (comps == null || comps.isEmpty) return null;
   final c = comps.first as Map<String, dynamic>;
@@ -208,6 +218,7 @@ Match? parseFootballEvent(Map<String, dynamic> e, FootballCompetition comp, Date
     sport: Sport.football,
     league: comp.label,
     leagueTone: comp.tone,
+    leagueLogoUrl: leagueLogo,
     venue: venue,
     status: status,
     statusLabel: switch (status) {
@@ -227,6 +238,7 @@ Match? parseFootballEvent(Map<String, dynamic> e, FootballCompetition comp, Date
       MatchStatus.finished => type['description'] as String? ?? 'Full Time',
     },
     startTime: start,
+    detailsUrl: _matchPage(e),
   );
 }
 
@@ -298,12 +310,24 @@ RankedMatch? parseCricketEvent(Map<String, dynamic> e, String leagueName, DateTi
       homeDetail: score(competitors[0]),
       awayDetail: score(competitors[1]),
       homeBatting: homeBatting,
-      battingNote: homeBatting == null ? null : 'Batting',
       footerNote: summary.isNotEmpty ? summary : 'Starts ${hhmm(start)}',
       startTime: start,
+      detailsUrl: _matchPage(e),
     ),
     priority,
   );
+}
+
+/// The event's ESPN match page: the link tagged `summary`, or `live` while the match is on.
+String? _matchPage(Map<String, dynamic> e) {
+  for (final link in (e['links'] as List? ?? const []).whereType<Map>()) {
+    final href = link['href'] as String?;
+    final rel = link['rel'] as List? ?? const [];
+    if (href != null && href.startsWith('https://') && (rel.contains('summary') || rel.contains('live'))) {
+      return href;
+    }
+  }
+  return null;
 }
 
 MatchStatus _statusOf(String state) => switch (state) {

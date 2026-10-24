@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:piqx/data/scores_repository.dart';
+import 'package:piqx/data/stream_links.dart';
 import 'package:piqx/data/matches.dart';
 import 'package:piqx/main.dart';
 import 'package:piqx/screens/splash_screen.dart';
@@ -13,6 +14,7 @@ import 'fakes.dart';
 
 Widget app([ScoresRepository? repository]) => PiqxApp(
       repository: repository ?? FakeScoresRepository(),
+      streams: StreamLinks(), // never loaded: no streams, so the placeholder shows
       autoRefresh: false,
       checkUpdatesOnStart: false,
     );
@@ -64,7 +66,29 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('England'), findsOneWidget);
     expect(find.text('Arsenal'), findsNothing);
-    expect(find.text('Batting • Req. 8.2 rpo'), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is Icon && w.semanticLabel == 'Batting'), findsOneWidget);
+    expect(find.text('168/4'), findsOneWidget);
+    expect(find.text('17.2 ov'), findsOneWidget);
+    expect(find.text('Watch Live'), findsNothing);
+  });
+
+  testWidgets('league chip filters the list; tapping it again clears the filter', (tester) async {
+    await tester.pumpWidget(app());
+    await pastSplash(tester);
+    expect(find.text('Arsenal'), findsOneWidget);
+    expect(find.text('Barcelona'), findsOneWidget);
+
+    await tester.tap(find.text('La Liga'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Barcelona'), findsOneWidget);
+    expect(find.text('Arsenal'), findsNothing);
+
+    await tester.tap(find.text('La Liga'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Arsenal'), findsOneWidget);
+    expect(find.text('Barcelona'), findsOneWidget);
   });
 
   testWidgets('watch live opens the stream screen', (tester) async {

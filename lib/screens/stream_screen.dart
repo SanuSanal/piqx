@@ -11,10 +11,13 @@ import '../widgets/live_badge.dart';
 
 /// "Matches - WebView Player Feed" from Stitch.
 class StreamScreen extends StatefulWidget {
-  const StreamScreen({super.key, required this.sport, this.match});
+  const StreamScreen({super.key, required this.sport, this.match, this.url});
 
   final Sport sport;
   final Match? match;
+
+  /// Stream page for [sport]; the placeholder shows while there is none.
+  final String? url;
 
   @override
   State<StreamScreen> createState() => _StreamScreenState();
@@ -24,7 +27,7 @@ class _StreamScreenState extends State<StreamScreen> {
   WebViewController? _controller;
   int _progress = 0;
 
-  String? get _url => streamUrls[widget.sport];
+  String? get _url => widget.url;
 
   @override
   void initState() {

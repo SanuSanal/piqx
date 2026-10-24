@@ -35,20 +35,24 @@ class Match {
     required this.away,
     required this.footerNote,
     this.leagueTone = LeagueTone.muted,
+    this.leagueLogoUrl,
     this.featured = false,
     this.homeScore,
     this.awayScore,
     this.homeDetail,
     this.awayDetail,
-    this.battingNote,
     this.homeBatting,
     this.startTime,
+    this.detailsUrl,
   });
 
   final String id;
   final Sport sport;
   final String league;
   final LeagueTone leagueTone;
+
+  /// Competition logo from the scores feed, for the league filter (football only).
+  final String? leagueLogoUrl;
   final String venue;
   final MatchStatus status;
 
@@ -65,15 +69,15 @@ class Match {
   final String? homeDetail;
   final String? awayDetail;
 
-  /// Cricket only: state of the batting side, e.g. "Batting • Req. 8.2 rpo".
-  final String? battingNote;
-
   /// Cricket only: true when the home side is batting, false when the away side is,
   /// null when nobody is (before the start, between innings, after the result).
   final bool? homeBatting;
 
   /// Scheduled start, when the feed provides one.
   final DateTime? startTime;
+
+  /// ESPN match page (scorecard, commentary), opened in a WebView when the card is tapped.
+  final String? detailsUrl;
 
   /// Caption under the teams, e.g. "Free Stream • No Sign Up".
   final String footerNote;
@@ -89,6 +93,7 @@ class Match {
         sport: sport,
         league: league,
         leagueTone: leagueTone,
+        leagueLogoUrl: leagueLogoUrl,
         venue: venue,
         status: status,
         statusLabel: statusLabel,
@@ -100,21 +105,18 @@ class Match {
         awayScore: awayScore,
         homeDetail: homeDetail,
         awayDetail: awayDetail,
-        battingNote: battingNote,
         homeBatting: homeBatting,
         startTime: startTime,
+        detailsUrl: detailsUrl,
       );
 }
 
 /// Public PiqX landing page (GitHub Pages, served from `docs/`).
 const appPageUrl = 'https://sanusanal.github.io/piqx/';
 
-/// Web stream page loaded in the stream screen's WebView, per sport.
-/// While a sport has no URL, the screen shows the "WebView Viewport" placeholder.
-const streamUrls = <Sport, String?>{
-  Sport.football: null,
-  Sport.cricket: null,
-};
+/// Stream page per sport, published from `docs/streams.json` (see `StreamLinks`).
+/// `--dart-define=STREAMS_URL=…` points a build at another copy, e.g. to try edits before pushing.
+const streamsJsonUrl = String.fromEnvironment('STREAMS_URL', defaultValue: '${appPageUrl}streams.json');
 
 /// GitHub repository that publishes PiqX releases (APK assets on version tags).
 const githubRepo = 'SanuSanal/piqx';

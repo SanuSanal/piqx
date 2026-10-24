@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'data/scores_controller.dart';
 import 'data/scores_repository.dart';
+import 'data/stream_links.dart';
 import 'screens/home_screen.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
@@ -16,6 +17,7 @@ class PiqxApp extends StatefulWidget {
     super.key,
     this.repository,
     this.updates,
+    this.streams,
     this.autoRefresh = true,
     this.checkUpdatesOnStart = true,
   });
@@ -23,6 +25,9 @@ class PiqxApp extends StatefulWidget {
   /// Scores source; ESPN's live feeds when null.
   final ScoresRepository? repository;
   final UpdateService? updates;
+
+  /// Stream links; fetched from GitHub Pages when null.
+  final StreamLinks? streams;
   final bool autoRefresh;
   final bool checkUpdatesOnStart;
 
@@ -39,6 +44,7 @@ class _PiqxAppState extends State<PiqxApp> {
     autoRefresh: widget.autoRefresh,
   )..refresh();
   late final _updates = widget.updates ?? UpdateService();
+  late final _streams = widget.streams ?? (StreamLinks()..load());
 
   void _toggleTheme() {
     setState(() {
@@ -65,6 +71,7 @@ class _PiqxAppState extends State<PiqxApp> {
           onToggleTheme: _toggleTheme,
           scores: _scores,
           updates: _updates,
+          streams: _streams,
           checkUpdatesOnStart: widget.checkUpdatesOnStart,
         ),
       ),

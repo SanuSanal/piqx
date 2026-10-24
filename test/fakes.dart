@@ -66,7 +66,6 @@ const sampleMatches = <Match>[
     away: Team('Australia', 'AUS'),
     homeDetail: '168/4 (17.2 ov)',
     awayDetail: '165/8 (20.0 ov)',
-    battingNote: 'Batting • Req. 8.2 rpo',
     homeBatting: true,
     footerNote: 'India need 18 runs in 16 balls',
     featured: true,

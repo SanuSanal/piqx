@@ -22,6 +22,17 @@ Map<String, dynamic> soccerEvent({
     {
       'id': id,
       'date': date,
+      'links': [
+        // ESPN tags the match page `live` while the match is on, `summary` otherwise.
+        {
+          'rel': [state == 'in' ? 'live' : 'summary', 'desktop', 'event'],
+          'href': 'https://www.espn.com/soccer/match/_/gameId/$id/everton-arsenal',
+        },
+        {
+          'rel': ['team-stats', 'desktop', 'event'],
+          'href': 'https://www.espn.com/soccer/team-stats/_/gameId/$id/league/eng.1',
+        },
+      ],
       'status': {
         'type': {'state': state, 'shortDetail': shortDetail, 'description': description},
       },
@@ -74,6 +85,16 @@ Map<String, dynamic> cricketEvent({
     {
       'id': id,
       'date': date,
+      'links': [
+        {
+          'rel': ['event', 'league', 'serieshome', 'desktop'],
+          'href': 'https://www.espn.in/cricket/series/_/id/1/season/2026/series',
+        },
+        {
+          'rel': ['event', 'boxscore', 'match', 'live', 'summary', 'desktop'],
+          'href': 'https://www.espn.in/cricket/series/1/game/$id/match',
+        },
+      ],
       'status': {
         'summary': summary,
         'type': {'state': state, 'description': description},
@@ -139,6 +160,7 @@ void main() {
       expect(m.leagueTone, LeagueTone.neutral);
       expect(m.home.logoUrl, 'https://a.espncdn.com/i/teamlogos/soccer/500/359.png');
       expect(m.away.logoUrl, isNull);
+      expect(m.detailsUrl, 'https://www.espn.com/soccer/match/_/gameId/9/everton-arsenal');
     });
 
     test('upcoming match has a countdown and no score', () {
@@ -170,7 +192,25 @@ void main() {
       expect(m.status, MatchStatus.finished);
       expect(m.statusLabel, 'FT');
       expect(m.footerNote, 'Full Time');
+      expect(m.detailsUrl, 'https://www.espn.com/soccer/match/_/gameId/2/everton-arsenal');
     });
+  });
+
+  test('league logo is the default one from the scoreboard', () {
+    expect(
+      leagueLogo({
+        'leagues': [
+          {
+            'logos': [
+              {'rel': ['full', 'dark'], 'href': 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/23.png'},
+              {'rel': ['full', 'default'], 'href': 'https://a.espncdn.com/i/leaguelogos/soccer/500/23.png'},
+            ],
+          },
+        ],
+      }),
+      'https://a.espncdn.com/i/leaguelogos/soccer/500/23.png',
+    );
+    expect(leagueLogo(null), isNull);
   });
 
   group('parseCricketEvent', () {
@@ -195,7 +235,7 @@ void main() {
       expect(m.home.name, 'Australia'); // batted first
       expect(m.away.name, 'India');
       expect(m.homeBatting, false);
-      expect(m.battingNote, 'Batting');
+      expect(m.detailsUrl, 'https://www.espn.in/cricket/series/1/game/5/match');
       expect(m.league, 'T20I');
       expect(m.venue, '2nd T20I • Melbourne');
       expect(m.footerNote, 'India need 18 runs in 16 balls');

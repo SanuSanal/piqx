@@ -7,6 +7,19 @@ Live football and cricket scores and streams for Android.
 
 Scores come from ESPN's public scoreboard feeds (`lib/data/scores_repository.dart`). No API key is needed. The app refreshes every 30 seconds while a match is live and every five minutes otherwise.
 
+## Stream links
+
+The stream page for each sport lives in [`docs/streams.json`](docs/streams.json), which GitHub Pages serves at `https://sanusanal.github.io/piqx/streams.json`:
+
+```json
+{
+  "football": "https://example.com/football",
+  "cricket": null
+}
+```
+
+The app fetches it on every launch, so changing a link only needs a push to `main`, not a new release. Pages takes a minute or so to deploy. Use `null` while a sport has no stream; the stream screen then shows its placeholder. The app keeps the last links it fetched, so they still work when Pages can't be reached.
+
 ## Development
 
 ```bash
