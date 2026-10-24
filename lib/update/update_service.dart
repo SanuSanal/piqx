@@ -33,7 +33,16 @@ class UpdateService {
 
   Future<String> currentVersion() async => (await PackageInfo.fromPlatform()).version;
 
-  /// The latest release that has an APK attached, or null when there is none yet.
+  /// Device ABIs, best first (e.g. arm64-v8a, armeabi-v7a); empty when unknown.
+  Future<List<String>> supportedAbis() async {
+    try {
+      return (await _installer.invokeListMethod<String>('supportedAbis')) ?? const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// The latest release with an APK this device can install, or null when there is none yet.
   Future<AppRelease?> latestRelease() async {
     final res = await _client.get(
       Uri.parse('https://api.github.com/repos/$repo/releases/latest'),
@@ -41,7 +50,7 @@ class UpdateService {
     ).timeout(const Duration(seconds: 15));
     if (res.statusCode == 404) return null;
     if (res.statusCode != 200) throw HttpException('GitHub releases: HTTP ${res.statusCode}');
-    return parseRelease(jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>);
+    return parseRelease(jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>, abis: await supportedAbis());
   }
 
   /// Newer release than the installed app, or null when up to date.
@@ -90,13 +99,25 @@ class UpdateService {
   Future<void> skip(String version) async => (await SharedPreferences.getInstance()).setString(_skippedKey, version);
 }
 
-/// Reads a GitHub "release" object; null when it has no APK asset.
-AppRelease? parseRelease(Map<String, dynamic> json) {
+/// ABIs release APKs are built for; their names end in `-<abi>.apk`.
+const releaseAbis = ['arm64-v8a', 'armeabi-v7a', 'x86_64'];
+
+/// Reads a GitHub "release" object; null when it has no APK for the device.
+///
+/// Releases carry one APK per ABI (`piqx-v1.2.3-arm64-v8a.apk`); the first of [abis] (the
+/// device's, best first) with an APK wins. Older releases have a single universal APK, used
+/// as a fallback.
+AppRelease? parseRelease(Map<String, dynamic> json, {List<String> abis = const []}) {
   final tag = json['tag_name'] as String? ?? '';
-  final apk = (json['assets'] as List? ?? const [])
+  final apks = (json['assets'] as List? ?? const [])
       .cast<Map<String, dynamic>>()
       .where((a) => (a['name'] as String? ?? '').toLowerCase().endsWith('.apk'))
-      .firstOrNull;
+      .toList();
+  String name(Map<String, dynamic> a) => (a['name'] as String).toLowerCase();
+  final apk = [
+    for (final abi in abis) ...apks.where((a) => name(a).endsWith('-$abi.apk')),
+    ...apks.where((a) => !releaseAbis.any((abi) => name(a).endsWith('-$abi.apk'))),
+  ].firstOrNull;
   if (tag.isEmpty || apk == null) return null;
   return AppRelease(
     version: tag.startsWith('v') ? tag.substring(1) : tag,

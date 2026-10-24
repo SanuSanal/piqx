@@ -30,6 +30,23 @@ void main() {
     expect(r.notes, 'Live scores');
   });
 
+  test('parseRelease picks the APK for the device ABI', () {
+    final release = {
+      'tag_name': 'v1.0.2',
+      'assets': [
+        for (final abi in ['armeabi-v7a', 'arm64-v8a', 'x86_64'])
+          {'name': 'piqx-v1.0.2-$abi.apk', 'browser_download_url': 'https://example.com/$abi.apk'},
+      ],
+    };
+    expect(parseRelease(release, abis: ['arm64-v8a', 'armeabi-v7a', 'armeabi'])!.apkUrl.toString(),
+        'https://example.com/arm64-v8a.apk');
+    expect(parseRelease(release, abis: ['armeabi-v7a', 'armeabi'])!.apkUrl.toString(),
+        'https://example.com/armeabi-v7a.apk');
+    // No matching ABI and no universal APK: nothing to install.
+    expect(parseRelease(release, abis: ['x86']), isNull);
+    expect(parseRelease(release), isNull);
+  });
+
   test('parseRelease ignores releases without an APK', () {
     expect(parseRelease({'tag_name': 'v1.0.0', 'assets': []}), isNull);
   });

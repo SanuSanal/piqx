@@ -1,6 +1,7 @@
 package com.piqx.piqx
 
 import android.content.Intent
+import android.os.Build
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -10,8 +11,10 @@ import java.io.File
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        // Opens a downloaded update APK in the system package installer.
+        // Opens a downloaded update APK in the system package installer, and reports the
+        // device's ABIs (best first) so the updater downloads the matching APK.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "piqx/installer").setMethodCallHandler { call, result ->
+            if (call.method == "supportedAbis") return@setMethodCallHandler result.success(Build.SUPPORTED_ABIS.toList())
             if (call.method != "installApk") return@setMethodCallHandler result.notImplemented()
             val path = call.argument<String>("path")
                 ?: return@setMethodCallHandler result.error("bad_args", "Missing APK path", null)
