@@ -314,8 +314,6 @@ void main() {
     final matches = await EspnScoresRepository(client: client, clock: () => now).fetchToday();
     final football = matches.where((m) => m.sport == Sport.football).toList();
     expect(football.map((m) => m.id), ['football-ucl-live', 'football-pl-live', 'football-pl-late']);
-    expect(football.first.featured, isTrue);
-    expect(football.skip(1).any((m) => m.featured), isFalse);
     expect(matches.where((m) => m.sport == Sport.cricket).single.league, 'IPL');
   });
 

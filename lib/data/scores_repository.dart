@@ -153,7 +153,7 @@ class RankedMatch {
 
 String _state(Map e) => ((e['status'] as Map?)?['type'] as Map?)?['state'] as String? ?? 'pre';
 
-/// Live matches first (the top one featured), then upcoming by start time, then results.
+/// Live matches first, then upcoming by start time, then results.
 List<Match> _arrange(Iterable<RankedMatch> ranked) {
   int group(Match m) => switch (m.status) {
         MatchStatus.live => 0,
@@ -169,9 +169,7 @@ List<Match> _arrange(Iterable<RankedMatch> ranked) {
       if (t != 0) return a.match.isFinished ? -t : t;
       return a.priority.compareTo(b.priority);
     });
-  return [
-    for (final (i, r) in sorted.indexed) i == 0 && r.match.isLive ? r.match.copyWith(featured: true) : r.match,
-  ];
+  return [for (final r in sorted) r.match];
 }
 
 /// The competition's standard logo from a soccer scoreboard response.

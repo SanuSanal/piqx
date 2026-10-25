@@ -27,7 +27,6 @@ const sampleMatches = <Match>[
     homeDetail: "Saka 22', Rice 58'",
     awayDetail: "Haaland 41'",
     footerNote: 'Free Stream • No Sign Up',
-    featured: true,
   ),
   Match(
     id: 'rma-bay',
@@ -68,7 +67,6 @@ const sampleMatches = <Match>[
     awayDetail: '165/8 (20.0 ov)',
     homeBatting: true,
     footerNote: 'India need 18 runs in 16 balls',
-    featured: true,
   ),
   Match(
     id: 'eng-rsa',

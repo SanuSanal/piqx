@@ -36,7 +36,6 @@ class Match {
     required this.footerNote,
     this.leagueTone = LeagueTone.muted,
     this.leagueLogoUrl,
-    this.featured = false,
     this.homeScore,
     this.awayScore,
     this.homeDetail,
@@ -82,33 +81,8 @@ class Match {
   /// Caption under the teams, e.g. "Free Stream • No Sign Up".
   final String footerNote;
 
-  /// Featured matches get the large marquee card.
-  final bool featured;
-
   bool get isLive => status == MatchStatus.live;
   bool get isFinished => status == MatchStatus.finished;
-
-  Match copyWith({bool? featured}) => Match(
-        id: id,
-        sport: sport,
-        league: league,
-        leagueTone: leagueTone,
-        leagueLogoUrl: leagueLogoUrl,
-        venue: venue,
-        status: status,
-        statusLabel: statusLabel,
-        home: home,
-        away: away,
-        footerNote: footerNote,
-        featured: featured ?? this.featured,
-        homeScore: homeScore,
-        awayScore: awayScore,
-        homeDetail: homeDetail,
-        awayDetail: awayDetail,
-        homeBatting: homeBatting,
-        startTime: startTime,
-        detailsUrl: detailsUrl,
-      );
 }
 
 /// Public PiqX landing page (GitHub Pages, served from `docs/`).

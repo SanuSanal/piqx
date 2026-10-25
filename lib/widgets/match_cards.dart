@@ -19,7 +19,6 @@ class MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (match.sport == Sport.cricket) return _CricketCard(match: match, onOpen: onOpen);
-    if (match.featured) return _FeaturedFootballCard(match: match, onOpen: onOpen);
     return _CompactMatchCard(match: match, onOpen: onOpen, onWatch: onWatch);
   }
 }
@@ -127,59 +126,10 @@ class _CompactShell extends StatelessWidget {
   }
 }
 
-class _FeaturedShell extends StatelessWidget {
-  const _FeaturedShell({required this.child, required this.glow, this.onTap});
-
-  final Widget child;
-  final Color glow;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: c.primaryContainer.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 24, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Stack(
-            children: [
-              Positioned(
-                top: -48,
-                right: -48,
-                child: Container(
-                  width: 128,
-                  height: 128,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [glow.withValues(alpha: 0.14), glow.withValues(alpha: 0)]),
-                  ),
-                ),
-              ),
-              Padding(padding: const EdgeInsets.all(16), child: child),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _LeaguePill extends StatelessWidget {
-  const _LeaguePill({required this.match, this.large = false});
+  const _LeaguePill({required this.match});
 
   final Match match;
-  final bool large;
 
   @override
   Widget build(BuildContext context) {
@@ -190,12 +140,10 @@ class _LeaguePill extends StatelessWidget {
       LeagueTone.muted => c.onSurfaceVariant,
     };
     return Container(
-      padding: large
-          ? const EdgeInsets.symmetric(horizontal: 10, vertical: 4)
-          : const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: c.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(large ? 6 : 4),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(match.league.toUpperCase(), style: AppText.labelSm.copyWith(color: color)),
     );
@@ -203,25 +151,23 @@ class _LeaguePill extends StatelessWidget {
 }
 
 class _CardHeader extends StatelessWidget {
-  const _CardHeader({required this.match, this.large = false});
+  const _CardHeader({required this.match});
 
   final Match match;
-  final bool large;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final venueStyle = large ? AppText.labelSm : AppText.bodySm;
     return Row(
       children: [
-        _LeaguePill(match: match, large: large),
+        _LeaguePill(match: match),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             match.venue,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: venueStyle.copyWith(color: c.onSurfaceVariant, fontWeight: large ? FontWeight.w500 : null),
+            style: AppText.bodySm.copyWith(color: c.onSurfaceVariant),
           ),
         ),
         const SizedBox(width: 8),
@@ -283,22 +229,17 @@ class _UpcomingBadge extends StatelessWidget {
 
 /// Team crest filling its square, or the team code (in a rounded tile when there's no crest).
 class _TeamBadge extends StatelessWidget {
-  const _TeamBadge({required this.team, required this.size, this.color, this.bordered = false});
+  const _TeamBadge({required this.team, required this.size});
 
   final Team team;
   final double size;
 
-  /// Colour of the code fallback.
-  final Color? color;
-  final bool bordered;
-
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final style = size >= 44 ? AppText.headlineSm : AppText.labelLg;
     final code = Text(
       team.code,
-      style: style.copyWith(color: color ?? c.onSurface, fontWeight: FontWeight.w700, letterSpacing: 0),
+      style: AppText.labelLg.copyWith(color: c.onSurface, fontWeight: FontWeight.w700, letterSpacing: 0),
     );
     final logo = team.logoUrl;
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -317,8 +258,7 @@ class _TeamBadge extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: c.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(size >= 44 ? 12 : 8),
-        border: bordered ? Border.all(color: c.outlineVariant.withValues(alpha: 0.3)) : null,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: code,
     );
@@ -361,82 +301,6 @@ List<String> espnLogoUrls(String logo, {required bool dark, required int px}) {
   ];
 }
 
-class _FeaturedFootballCard extends StatelessWidget {
-  const _FeaturedFootballCard({required this.match, required this.onOpen});
-
-  final Match match;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    Widget team(Team t, String? detail, {required bool end}) {
-      final names = Column(
-        crossAxisAlignment: end ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Text(t.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: AppText.headlineSm.copyWith(color: c.onSurface)),
-          if (detail != null)
-            Text(detail, maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: AppText.bodySm.copyWith(color: c.onSurfaceVariant)),
-        ],
-      );
-      final code = _TeamBadge(
-        team: t,
-        size: 44,
-        bordered: true,
-        color: end ? c.secondaryText : null,
-      );
-      return Expanded(
-        child: Row(
-          mainAxisAlignment: end ? MainAxisAlignment.end : MainAxisAlignment.start,
-          children: end
-              ? [Flexible(child: names), const SizedBox(width: 12), code]
-              : [code, const SizedBox(width: 12), Flexible(child: names)],
-        ),
-      );
-    }
-
-    return _FeaturedShell(
-      glow: c.primaryContainer,
-      onTap: onOpen,
-      child: Column(
-        children: [
-          _CardHeader(match: match, large: true),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                team(match.home, match.homeDetail, end: false),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: c.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: c.outlineVariant.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    children: [
-                      Text('${match.homeScore}', style: AppText.score.copyWith(color: c.onSurface)),
-                      const SizedBox(width: 8),
-                      Text(':', style: AppText.score.copyWith(fontSize: 24, color: c.primaryText)),
-                      const SizedBox(width: 8),
-                      Text('${match.awayScore}', style: AppText.score.copyWith(color: c.onSurface)),
-                    ],
-                  ),
-                ),
-                team(match.away, match.awayDetail, end: true),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Cricket card: one row per side with its innings on the right and a bat by the side batting.
 /// The whole card opens the match; there's no watch button.
 class _CricketCard extends StatelessWidget {
@@ -448,7 +312,6 @@ class _CricketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final large = match.featured;
 
     // The batting side is drawn in full; the other is dimmed. Before anyone bats, both are full.
     Widget side(Team team, String? detail, {required bool batting, required bool dimmed}) {
@@ -478,7 +341,7 @@ class _CricketCard extends StatelessWidget {
               children: [
                 Text(runs,
                     style: AppText.headlineSm.copyWith(
-                      fontSize: large ? 22 : 20,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: batting ? c.primaryText : c.onSurface,
                     )),
@@ -500,8 +363,8 @@ class _CricketCard extends StatelessWidget {
     final homeBatting = match.homeBatting;
     final body = Column(
       children: [
-        _CardHeader(match: match, large: large),
-        SizedBox(height: large ? 12 : 10),
+        _CardHeader(match: match),
+        const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
@@ -536,7 +399,6 @@ class _CricketCard extends StatelessWidget {
       ],
     );
 
-    if (large) return _FeaturedShell(glow: c.secondaryContainer, onTap: onOpen, child: body);
     return _CompactShell(onTap: onOpen, child: body);
   }
 }
