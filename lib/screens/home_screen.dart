@@ -12,6 +12,7 @@ import '../update/update_prompt.dart';
 import '../update/update_service.dart';
 import '../widgets/live_badge.dart';
 import '../widgets/match_cards.dart';
+import '../widgets/toast.dart';
 import 'match_details_screen.dart';
 import 'stream_screen.dart';
 
@@ -91,14 +92,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (didPop) return;
     final now = DateTime.now();
     if (_lastBack != null && now.difference(_lastBack!) < _exitWindow) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).hideToast();
       SystemNavigator.pop();
       return;
     }
     _lastBack = now;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Press back again to exit'), duration: _exitWindow));
+    showToast(context, 'Press back again to exit', duration: _exitWindow);
   }
 
   /// A match with an ESPN page opens it; otherwise its sport's stream.

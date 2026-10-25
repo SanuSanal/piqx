@@ -8,6 +8,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../data/matches.dart';
 import '../theme/app_theme.dart';
 import '../widgets/live_badge.dart';
+import '../widgets/web_api_hook.dart';
 import '../widgets/web_video.dart';
 
 /// Page script: on a channel page (an address with an `@handle`, e.g. `/@LaLiga/videos`), hides
@@ -56,13 +57,16 @@ const _hideChannelNameJs = r"""
 
 /// "Matches - WebView Player Feed" from Stitch.
 class StreamScreen extends StatefulWidget {
-  const StreamScreen({super.key, required this.sport, this.match, this.url});
+  const StreamScreen({super.key, required this.sport, this.match, this.url, this.onApiCall});
 
   final Sport sport;
   final Match? match;
 
   /// Stream page for [sport]; the placeholder shows while there is none.
   final String? url;
+
+  /// Receives the API calls the page makes; null leaves the page unwatched.
+  final WebApiCallback? onApiCall;
 
   @override
   State<StreamScreen> createState() => _StreamScreenState();
@@ -91,8 +95,10 @@ class _StreamScreenState extends State<StreamScreen> {
             },
             onPageFinished: (_) => _injectPageScripts(),
           ),
-        )
-        ..loadRequest(Uri.parse(url));
+        );
+      final onApiCall = widget.onApiCall;
+      if (onApiCall != null) watchApiCalls(_controller!, onApiCall);
+      _controller!.loadRequest(Uri.parse(url));
       enableLandscapeFullscreen(_controller!, () => context);
     }
   }
@@ -100,7 +106,7 @@ class _StreamScreenState extends State<StreamScreen> {
   /// Injected as the page loads, so the channel name never shows; each script installs once
   /// per page and then keeps itself up to date.
   void _injectPageScripts() {
-    for (final js in const [_hideChannelNameJs, autoFullscreenOnPlayJs]) {
+    for (final js in [_hideChannelNameJs, if (widget.onApiCall != null) apiCallHookJs]) {
       _controller?.runJavaScript(js).catchError((_) {});
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/toast.dart';
 import 'update_service.dart';
 
 /// Checks GitHub for a newer PiqX and offers to install it.
@@ -14,14 +15,14 @@ Future<void> checkForUpdates(BuildContext context, UpdateService service, {requi
     update = await service.availableUpdate();
     if (!manual && update != null && await service.skippedVersion() == update.version) return;
   } catch (_) {
-    if (manual) messenger.showSnackBar(const SnackBar(content: Text("Couldn't check for updates. Try again later.")));
+    if (manual) messenger.showToast("Couldn't check for updates. Try again later.", kind: ToastKind.error);
     return;
   }
   if (!context.mounted) return;
   if (update == null) {
     if (manual) {
       final current = await service.currentVersion().catchError((_) => '');
-      messenger.showSnackBar(SnackBar(content: Text("You're on the latest version${current.isEmpty ? '' : ' (v$current)'}.")));
+      messenger.showToast("You're on the latest version${current.isEmpty ? '' : ' (v$current)'}.", kind: ToastKind.success);
     }
     return;
   }
@@ -54,7 +55,7 @@ Future<void> _downloadAndInstall(BuildContext context, UpdateService service, Ap
     await service.install(apk);
   } catch (_) {
     navigator.pop();
-    messenger.showSnackBar(const SnackBar(content: Text('The update failed to download. Check your connection and try again.')));
+    messenger.showToast('The update failed to download. Check your connection and try again.', kind: ToastKind.error);
   } finally {
     progress.dispose();
   }
@@ -70,15 +71,10 @@ class _UpdateDialog extends StatelessWidget {
     final c = context.colors;
     return AlertDialog(
       backgroundColor: c.surfaceContainer,
-      title: Text('PiqX v${release.version} is available', style: AppText.headlineSm.copyWith(color: c.onSurface)),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 240),
-        child: SingleChildScrollView(
-          child: Text(
-            release.notes.isEmpty ? 'A new version of PiqX is ready to install.' : release.notes,
-            style: AppText.bodyMd.copyWith(color: c.onSurfaceVariant),
-          ),
-        ),
+      title: Text('Update available', style: AppText.headlineSm.copyWith(color: c.onSurface)),
+      content: Text(
+        'A new version of PiqX (v${release.version}) is ready to install.',
+        style: AppText.bodyMd.copyWith(color: c.onSurfaceVariant),
       ),
       actions: [
         TextButton(

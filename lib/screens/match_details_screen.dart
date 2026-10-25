@@ -4,6 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../data/matches.dart';
 import '../theme/app_theme.dart';
+import '../widgets/web_api_hook.dart';
 import '../widgets/web_video.dart';
 
 /// Hides ESPN's own site header and nav (espn.com football, espn.in cricket); the screen's
@@ -22,10 +23,13 @@ const _hideEspnHeader = r'''
 
 /// A match's ESPN page (scorecard, commentary) in a WebView.
 class MatchDetailsScreen extends StatefulWidget {
-  const MatchDetailsScreen({super.key, required this.match, required this.url});
+  const MatchDetailsScreen({super.key, required this.match, required this.url, this.onApiCall});
 
   final Match match;
   final String url;
+
+  /// Receives the API calls the page makes; null leaves the page unwatched.
+  final WebApiCallback? onApiCall;
 
   @override
   State<MatchDetailsScreen> createState() => _MatchDetailsScreenState();
@@ -43,20 +47,26 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
       ..setBackgroundColor(PiqxColors.dark.surfaceContainerLowest)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (_) => _hideSiteHeader(),
+          onPageStarted: (_) => _injectPageScripts(),
           onProgress: (p) {
             setState(() => _progress = p);
-            _hideSiteHeader();
+            _injectPageScripts();
           },
-          onPageFinished: (_) => _hideSiteHeader(),
+          onPageFinished: (_) => _injectPageScripts(),
         ),
-      )
-      ..loadRequest(Uri.parse(widget.url));
+      );
+    final onApiCall = widget.onApiCall;
+    if (onApiCall != null) watchApiCalls(_controller, onApiCall);
+    _controller.loadRequest(Uri.parse(widget.url));
     enableLandscapeFullscreen(_controller, () => context);
   }
 
-  /// Injected as the page loads (it's a no-op once the style is in), so the header barely flashes.
-  void _hideSiteHeader() => _controller.runJavaScript(_hideEspnHeader).catchError((_) {});
+  /// Injected as the page loads (each is a no-op once installed), so the header barely flashes.
+  void _injectPageScripts() {
+    for (final js in [_hideEspnHeader, if (widget.onApiCall != null) apiCallHookJs]) {
+      _controller.runJavaScript(js).catchError((_) {});
+    }
+  }
 
   /// System back walks back through the page's history first, then leaves the screen.
   Future<void> _onBack(bool didPop, Object? _) async {

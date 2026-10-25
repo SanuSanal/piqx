@@ -27,7 +27,6 @@ void main() {
     })!;
     expect(r.version, '1.3.0');
     expect(r.apkUrl.toString(), 'https://example.com/piqx-v1.3.0.apk');
-    expect(r.notes, 'Live scores');
   });
 
   test('parseRelease picks the APK for the device ABI', () {

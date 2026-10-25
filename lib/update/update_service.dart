@@ -11,12 +11,11 @@ import '../data/matches.dart';
 
 /// A published PiqX release with an installable APK.
 class AppRelease {
-  const AppRelease({required this.version, required this.apkUrl, required this.notes, required this.pageUrl});
+  const AppRelease({required this.version, required this.apkUrl, required this.pageUrl});
 
   /// Version without the leading "v", e.g. "1.2.0".
   final String version;
   final Uri apkUrl;
-  final String notes;
   final Uri pageUrl;
 }
 
@@ -122,7 +121,6 @@ AppRelease? parseRelease(Map<String, dynamic> json, {List<String> abis = const [
   return AppRelease(
     version: tag.startsWith('v') ? tag.substring(1) : tag,
     apkUrl: Uri.parse(apk['browser_download_url'] as String),
-    notes: (json['body'] as String? ?? '').trim(),
     pageUrl: Uri.parse(json['html_url'] as String? ?? 'https://github.com/$githubRepo/releases'),
   );
 }

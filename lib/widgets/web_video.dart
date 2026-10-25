@@ -6,8 +6,8 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 /// The app runs in portrait; only full-screen web video turns to landscape.
 Future<void> lockPortrait() => SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
 
-/// Shows the page's full-screen video (its own full-screen button, or [autoFullscreenOnPlayJs])
-/// over the app in landscape, and returns to portrait when the video leaves full screen.
+/// When the user taps a video's full-screen button, shows it over the app in landscape, and
+/// returns to portrait when it leaves full screen. Videos never go full screen by themselves.
 Future<void> enableLandscapeFullscreen(WebViewController controller, BuildContext Function() context) async {
   final android = controller.platform;
   if (android is! AndroidWebViewController) return;
@@ -67,27 +67,3 @@ class _FullscreenVideoState extends State<_FullscreenVideo> {
     );
   }
 }
-
-/// Page script: when a video starts playing, put its player in full screen (and so, through
-/// [enableLandscapeFullscreen], in landscape). The player is the largest ancestor that is the
-/// same size as the video, found when the video plays, so the site's own controls come along.
-/// Browsers only allow this shortly after a tap, so muted autoplay stays inline.
-const autoFullscreenOnPlayJs = r'''
-(() => {
-  if (window.__piqxAutoFullscreen) return;
-  window.__piqxAutoFullscreen = true;
-  document.addEventListener('play', (event) => {
-    const video = event.target;
-    if (!(video instanceof HTMLVideoElement) || document.fullscreenElement) return;
-    const box = video.getBoundingClientRect();
-    let player = video;
-    for (let el = video.parentElement; el && el !== document.body; el = el.parentElement) {
-      const r = el.getBoundingClientRect();
-      if (Math.abs(r.width - box.width) > 2 || Math.abs(r.height - box.height) > 2) break;
-      player = el;
-    }
-    const request = player.requestFullscreen || player.webkitRequestFullscreen;
-    if (request) Promise.resolve(request.call(player)).catch(() => {});
-  }, true);
-})();
-''';
