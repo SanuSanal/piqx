@@ -1,5 +1,6 @@
 package com.piqx.piqx
 
+import android.app.UiModeManager
 import android.content.Intent
 import android.os.Build
 import androidx.core.content.FileProvider
@@ -28,6 +29,18 @@ class MainActivity : FlutterActivity() {
             } catch (e: Exception) {
                 result.error("install_failed", e.message, null)
             }
+        }
+        // Makes the app's light/dark choice the app's night mode on Android 12+, so the
+        // system launch screen (and the -night resources) follow it on the next start.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "piqx/theme").setMethodCallHandler { call, result ->
+            if (call.method != "setNightMode") return@setMethodCallHandler result.notImplemented()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val dark = call.argument<Boolean>("dark") ?: true
+                getSystemService(UiModeManager::class.java).setApplicationNightMode(
+                    if (dark) UiModeManager.MODE_NIGHT_YES else UiModeManager.MODE_NIGHT_NO
+                )
+            }
+            result.success(null)
         }
     }
 }

@@ -57,6 +57,16 @@ void main() {
     expect(find.text('3 TODAY'), findsOneWidget);
   });
 
+  testWidgets('the theme button saves the choice for the next launch', (tester) async {
+    await tester.pumpWidget(app());
+    await pastSplash(tester);
+
+    await tester.tap(find.byTooltip('Switch to light theme'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect((await SharedPreferences.getInstance()).getString('theme.mode'), 'light');
+  });
+
   testWidgets('cricket tab switches the match list', (tester) async {
     await tester.pumpWidget(app());
     await pastSplash(tester);

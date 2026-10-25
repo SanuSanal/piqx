@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ follows the app's own light/dark choice (ThemeStore), so the launch screen
+     can be light. Older Android keeps the dark surface from values/colors.xml. -->
+<resources>
+    <color name="piqx_surface">#F4F6F9</color>
+</resources>

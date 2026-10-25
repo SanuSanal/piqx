@@ -52,10 +52,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    // The splash is always dark, whatever theme the app is in.
-    const c = PiqxColors.dark;
+    // Follows the app's theme, which is the one saved on the device from the first frame.
+    final c = context.colors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
+      value: (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
         statusBarColor: Colors.transparent,
         systemNavigationBarColor: c.surface,
       ),
@@ -91,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Image.asset(
-                        'assets/images/logo.png',
+                        dark ? 'assets/images/logo.png' : 'assets/images/logo_on_light.png',
                         width: 200,
                         semanticLabel: 'PiqX',
                       ),
@@ -139,7 +140,7 @@ class _ProgressTrack extends StatelessWidget {
         height: 4,
         child: Stack(
           children: [
-            Positioned.fill(child: ColoredBox(color: Colors.white.withValues(alpha: 0.12))),
+            Positioned.fill(child: ColoredBox(color: colors.onSurface.withValues(alpha: 0.12))),
             AnimatedBuilder(
               animation: animation,
               builder: (context, _) => FractionallySizedBox(
