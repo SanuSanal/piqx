@@ -1,10 +1,8 @@
 {
-  "football": "https://www.youtube.com/@LaLiga/videos",
-  "cricket": "https://www.youtube.com/@ICC/videos",
+  "football": "https://vipbox.fm/football-schedule",
+  "cricket": "https://cricwatch.io/",
   "block": {
     "redirectsToOtherSites": true,
-    "apiCalls": [
-      { "host": "youtube.com", "query": { "xbot": "3" } }
-    ]
+    "apiCalls": [{ "host": "ay267.com", "query": { "wpo": "1" } }]
   }
 }
