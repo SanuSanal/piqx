@@ -9,6 +9,7 @@ import '../data/block_rules.dart';
 import '../data/matches.dart';
 import '../theme/app_theme.dart';
 import '../widgets/live_badge.dart';
+import '../widgets/picture_in_picture.dart';
 import '../widgets/toast.dart';
 import '../widgets/web_api_filter.dart';
 import '../widgets/web_api_hook.dart';
@@ -116,10 +117,52 @@ class _StreamScreenState extends State<StreamScreen> {
       final onApiCall = widget.onApiCall;
       if (onApiCall != null) watchApiCalls(_controller!, onApiCall);
       watchBlockedApiCalls(_controller!, (call) => _onBlocked('Blocked a call to ${Uri.tryParse(call)?.host ?? call}'));
-      _controller!.loadRequest(Uri.parse(url));
+      watchVideoPlayback(_controller!, _onVideo);
+      final pip = PictureInPicture.instance;
+      pip.active.addListener(_onPipChanged);
+      pip.onDismissed = _pauseVideo;
+      _load(Uri.parse(url));
       enableLandscapeFullscreen(_controller!, () => context);
     }
   }
+
+  @override
+  void dispose() {
+    if (_controller != null) {
+      final pip = PictureInPicture.instance;
+      pip.active.removeListener(_onPipChanged);
+      if (pip.onDismissed == _pauseVideo) pip.onDismissed = null;
+      pip.setVideo(playing: false);
+    }
+    super.dispose();
+  }
+
+  /// Adds the video script to every frame before the page loads, so players embedded from
+  /// other sites are seen too.
+  Future<void> _load(Uri url) async {
+    final controller = _controller!;
+    await runInAllFrames(controller, videoPlaybackJs);
+    await controller.loadRequest(url);
+  }
+
+  /// Showing in the floating window, where only the video shows.
+  bool _inPip = false;
+
+  /// While a video plays, leaving the app opens it in a floating window.
+  void _onVideo(VideoPlayback video) =>
+      PictureInPicture.instance.setVideo(playing: video.playing, width: video.width, height: video.height);
+
+  /// In the floating window the header and margins go, and the page fits its playing video
+  /// to the window; back in the app, both return.
+  void _onPipChanged() {
+    final active = PictureInPicture.instance.active.value;
+    if (!mounted || active == _inPip) return;
+    setState(() => _inPip = active);
+    _controller?.runJavaScript(fitVideoJs(active)).catchError((_) {});
+  }
+
+  /// Closing the floating window stops the video rather than leaving it playing unseen.
+  void _pauseVideo() => _controller?.runJavaScript(pauseVideoJs).catchError((_) {});
 
   static const _blockedToastFor = Duration(seconds: 3);
   DateTime? _blockedToastAt;
@@ -129,7 +172,7 @@ class _StreamScreenState extends State<StreamScreen> {
   void _onBlocked(String message) {
     final now = DateTime.now();
     final last = _blockedToastAt;
-    if (!mounted || (last != null && now.difference(last) < _blockedToastFor)) return;
+    if (!mounted || _inPip || (last != null && now.difference(last) < _blockedToastFor)) return;
     _blockedToastAt = now;
     showToast(context, message, duration: _blockedToastFor);
   }
@@ -146,9 +189,11 @@ class _StreamScreenState extends State<StreamScreen> {
   }
 
   /// Injected as the page loads, so the channel name never shows and filtered API calls never
-  /// go out; each script installs once per page and then keeps itself up to date.
+  /// go out; each script installs once per page and then keeps itself up to date. The video
+  /// script is here too for WebViews that can't run it in every frame.
   void _injectPageScripts() {
-    for (final js in [_hideChannelNameJs, ?_apiFilterJs, if (widget.onApiCall != null) apiCallHookJs]) {
+    final scripts = [_hideChannelNameJs, ?_apiFilterJs, videoPlaybackJs, if (widget.onApiCall != null) apiCallHookJs];
+    for (final js in scripts) {
       _controller?.runJavaScript(js).catchError((_) {});
     }
   }
@@ -197,15 +242,15 @@ class _StreamScreenState extends State<StreamScreen> {
           body: Stack(
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(16, topInset + 64 + 16, 16, 16 + bottomInset),
+                padding: _inPip ? EdgeInsets.zero : EdgeInsets.fromLTRB(16, topInset + 64 + 16, 16, 16 + bottomInset),
                 child: _controller == null
                     ? _WebViewPlaceholder(sport: widget.sport, title: title)
                     : ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(_inPip ? 0 : 12),
                         child: Stack(
                           children: [
                             WebViewWidget(controller: _controller!),
-                            if (_progress < 100)
+                            if (_progress < 100 && !_inPip)
                               LinearProgressIndicator(
                                 value: _progress / 100,
                                 minHeight: 3,
@@ -216,12 +261,13 @@ class _StreamScreenState extends State<StreamScreen> {
                         ),
                       ),
               ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: _StreamHeader(title: title, onBack: () => Navigator.of(context).pop(), onShare: _share),
-              ),
+              if (!_inPip)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _StreamHeader(title: title, onBack: () => Navigator.of(context).pop(), onShare: _share),
+                ),
             ],
           ),
         ),

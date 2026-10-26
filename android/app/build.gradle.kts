@@ -69,4 +69,6 @@ flutter {
 dependencies {
     // FileProvider for handing update APKs to the package installer.
     implementation("androidx.core:core:1.13.1")
+    // Scripts in every frame of the stream page (the same version webview_flutter_android uses).
+    implementation("androidx.webkit:webkit:1.15.0")
 }
