@@ -20,6 +20,25 @@ The stream page for each sport lives in [`docs/streams.json`](docs/streams.json)
 
 The app fetches it on every launch, so changing a link only needs a push to `main`, not a new release. Pages takes a minute or so to deploy. Use `null` while a sport has no stream; the stream screen then shows its placeholder. The app keeps the last links it fetched, so they still work when Pages can't be reached.
 
+The same file says what the stream screen blocks. A toast tells the viewer each time something is:
+
+```json
+{
+  "football": "https://example.com/football",
+  "block": {
+    "redirectsToOtherSites": true,
+    "apiCalls": [
+      { "host": "youtube.com", "query": { "xbot": "3" } }
+    ]
+  }
+}
+```
+
+- `redirectsToOtherSites`: the stream page can't leave its own site. Subdomains count as the same site, so `www.youtube.com` may still go to `m.youtube.com`. Frames inside the page, where players often live, can still load from anywhere.
+- `apiCalls`: `fetch`, `XMLHttpRequest` and `sendBeacon` calls to block. A call is blocked when it matches any rule. A rule matches when the call's host is `host` or a subdomain of it, and its query has every parameter in `query` with that value. Leave out `host` to match any host, or `query` to match every call to the host.
+
+Leave out `block`, or any part of it, to block nothing.
+
 ## Development
 
 ```bash

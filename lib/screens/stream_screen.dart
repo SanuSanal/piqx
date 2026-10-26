@@ -5,9 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../data/block_rules.dart';
 import '../data/matches.dart';
 import '../theme/app_theme.dart';
 import '../widgets/live_badge.dart';
+import '../widgets/toast.dart';
+import '../widgets/web_api_filter.dart';
 import '../widgets/web_api_hook.dart';
 import '../widgets/web_video.dart';
 
@@ -57,13 +60,23 @@ const _hideChannelNameJs = r"""
 
 /// "Matches - WebView Player Feed" from Stitch.
 class StreamScreen extends StatefulWidget {
-  const StreamScreen({super.key, required this.sport, this.match, this.url, this.onApiCall});
+  const StreamScreen({
+    super.key,
+    required this.sport,
+    this.match,
+    this.url,
+    this.blockRules = BlockRules.none,
+    this.onApiCall,
+  });
 
   final Sport sport;
   final Match? match;
 
   /// Stream page for [sport]; the placeholder shows while there is none.
   final String? url;
+
+  /// Redirects and API calls the page may not make; a toast says when one is blocked.
+  final BlockRules blockRules;
 
   /// Receives the API calls the page makes; null leaves the page unwatched.
   final WebApiCallback? onApiCall;
@@ -78,6 +91,9 @@ class _StreamScreenState extends State<StreamScreen> {
 
   String? get _url => widget.url;
 
+  late final String? _apiFilterJs =
+      widget.blockRules.apiCalls.isEmpty ? null : apiFilterJs(widget.blockRules.apiCalls);
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +104,7 @@ class _StreamScreenState extends State<StreamScreen> {
         ..setBackgroundColor(PiqxColors.dark.surfaceContainerLowest)
         ..setNavigationDelegate(
           NavigationDelegate(
+            onNavigationRequest: (request) => _allowNavigation(Uri.parse(url), request),
             onPageStarted: (_) => _injectPageScripts(),
             onProgress: (p) {
               setState(() => _progress = p);
@@ -98,15 +115,40 @@ class _StreamScreenState extends State<StreamScreen> {
         );
       final onApiCall = widget.onApiCall;
       if (onApiCall != null) watchApiCalls(_controller!, onApiCall);
+      watchBlockedApiCalls(_controller!, (call) => _onBlocked('Blocked a call to ${Uri.tryParse(call)?.host ?? call}'));
       _controller!.loadRequest(Uri.parse(url));
       enableLandscapeFullscreen(_controller!, () => context);
     }
   }
 
-  /// Injected as the page loads, so the channel name never shows; each script installs once
-  /// per page and then keeps itself up to date.
+  static const _blockedToastFor = Duration(seconds: 3);
+  DateTime? _blockedToastAt;
+
+  /// Shows [message] about something blocked. Pages often try several at once, so while that
+  /// toast is still up, further blocks don't show it again.
+  void _onBlocked(String message) {
+    final now = DateTime.now();
+    final last = _blockedToastAt;
+    if (!mounted || (last != null && now.difference(last) < _blockedToastFor)) return;
+    _blockedToastAt = now;
+    showToast(context, message, duration: _blockedToastFor);
+  }
+
+  /// Keeps the page on the stream's site when [StreamScreen.blockRules] say so. Frames inside
+  /// the page (often the player itself) may load from anywhere.
+  NavigationDecision _allowNavigation(Uri start, NavigationRequest request) {
+    final to = Uri.tryParse(request.url);
+    if (!request.isMainFrame || to == null || !widget.blockRules.blocksNavigation(start, to)) {
+      return NavigationDecision.navigate;
+    }
+    _onBlocked('Blocked a redirect to ${to.host.isEmpty ? to.scheme : to.host}');
+    return NavigationDecision.prevent;
+  }
+
+  /// Injected as the page loads, so the channel name never shows and filtered API calls never
+  /// go out; each script installs once per page and then keeps itself up to date.
   void _injectPageScripts() {
-    for (final js in [_hideChannelNameJs, if (widget.onApiCall != null) apiCallHookJs]) {
+    for (final js in [_hideChannelNameJs, ?_apiFilterJs, if (widget.onApiCall != null) apiCallHookJs]) {
       _controller?.runJavaScript(js).catchError((_) {});
     }
   }

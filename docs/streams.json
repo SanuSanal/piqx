@@ -1,4 +1,10 @@
 {
   "football": "https://www.youtube.com/@LaLiga/videos",
-  "cricket": "https://www.youtube.com/@ICC/videos"
+  "cricket": "https://www.youtube.com/@ICC/videos",
+  "block": {
+    "redirectsToOtherSites": true,
+    "apiCalls": [
+      { "host": "youtube.com", "query": { "xbot": "3" } }
+    ]
+  }
 }

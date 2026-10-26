@@ -111,13 +111,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _watch(Match match) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => StreamScreen(sport: match.sport, match: match, url: widget.streams[match.sport])),
+      MaterialPageRoute(
+        builder: (_) => StreamScreen(
+          sport: match.sport,
+          match: match,
+          url: widget.streams[match.sport],
+          blockRules: widget.streams.blockRules,
+        ),
+      ),
     );
   }
 
   void _openSport(Sport sport) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => StreamScreen(sport: sport, url: widget.streams[sport])),
+      MaterialPageRoute(
+        builder: (_) => StreamScreen(sport: sport, url: widget.streams[sport], blockRules: widget.streams.blockRules),
+      ),
     );
   }
 

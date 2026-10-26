@@ -21,17 +21,24 @@ void main() {
     final online = StreamLinks(
       client: MockClient((req) async {
         requested = req.url;
-        return http.Response('{"football": "https://example.com/f", "cricket": "https://example.com/c"}', 200);
+        return http.Response(
+          '{"football": "https://example.com/f", "cricket": "https://example.com/c",'
+          ' "block": {"redirectsToOtherSites": true, "apiCalls": [{"host": "example.com"}]}}',
+          200,
+        );
       }),
     );
     await online.load();
     expect(requested!.path, '/piqx/streams.json');
     expect(online[Sport.football], 'https://example.com/f');
     expect(online[Sport.cricket], 'https://example.com/c');
+    expect(online.blockRules.redirectsToOtherSites, isTrue);
+    expect(online.blockRules.apiCalls.single.host, 'example.com');
 
     final offline = StreamLinks(client: MockClient((_) async => throw http.ClientException('offline')));
     await offline.load();
     expect(offline[Sport.football], 'https://example.com/f');
+    expect(offline.blockRules.redirectsToOtherSites, isTrue);
   });
 
   test('a broken file keeps the saved links', () async {
