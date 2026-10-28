@@ -28,6 +28,14 @@ const footballCompetitions = <FootballCompetition>[
   FootballCompetition('fra.1', 'Ligue 1'),
   FootballCompetition('uefa.europa', 'Europa League', LeagueTone.secondary),
   FootballCompetition('esp.copa_del_rey', 'Copa del Rey'),
+  FootballCompetition('eng.league_cup', 'Carabao Cup'),
+  FootballCompetition('usa.1', 'MLS'),
+  FootballCompetition('ksa.1', 'Saudi Pro League'),
+  FootballCompetition('afc.champions', 'AFC Champions League Elite'),
+  FootballCompetition('concacaf.champions', 'Concacaf Champions Cup'),
+  FootballCompetition('concacaf.leagues.cup', 'Leagues Cup'),
+  FootballCompetition('ksa.kings.cup', "Saudi King's Cup"),
+  FootballCompetition('campeones.cup', 'Campeones Cup'),
 ];
 
 /// Men's international sides whose matches PiqX shows (ICC top ten).
