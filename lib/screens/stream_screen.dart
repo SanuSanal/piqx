@@ -210,6 +210,9 @@ class _StreamScreenState extends State<StreamScreen> {
     await SharePlus.instance.share(ShareParams(text: text, subject: 'Watch $what live on PiqX'));
   }
 
+  /// Reloads the page the WebView is on right now, not the one it started on.
+  void _reload() => _controller?.reload();
+
   /// System back walks back through the stream page's history first, then leaves the screen.
   Future<void> _onBack(bool didPop, Object? _) async {
     if (didPop) return;
@@ -266,7 +269,12 @@ class _StreamScreenState extends State<StreamScreen> {
                   top: 0,
                   left: 0,
                   right: 0,
-                  child: _StreamHeader(title: title, onBack: () => Navigator.of(context).pop(), onShare: _share),
+                  child: _StreamHeader(
+                    title: title,
+                    onBack: () => Navigator.of(context).pop(),
+                    onReload: _controller == null ? null : _reload,
+                    onShare: _share,
+                  ),
                 ),
             ],
           ),
@@ -277,10 +285,13 @@ class _StreamScreenState extends State<StreamScreen> {
 }
 
 class _StreamHeader extends StatelessWidget {
-  const _StreamHeader({required this.title, required this.onBack, required this.onShare});
+  const _StreamHeader({required this.title, required this.onBack, required this.onReload, required this.onShare});
 
   final String title;
   final VoidCallback onBack;
+
+  /// Null when there's no page to reload, which hides the button.
+  final VoidCallback? onReload;
   final VoidCallback onShare;
 
   @override
@@ -335,6 +346,12 @@ class _StreamHeader extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (onReload != null)
+                      IconButton(
+                        onPressed: onReload,
+                        tooltip: 'Reload',
+                        icon: Icon(Icons.refresh, size: 22, color: c.onSurfaceVariant),
+                      ),
                     IconButton(
                       onPressed: onShare,
                       tooltip: 'Share',
